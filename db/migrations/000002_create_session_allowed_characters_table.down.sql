@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS "session_allowed_characters";
