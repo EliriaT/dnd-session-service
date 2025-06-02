@@ -26,7 +26,12 @@ go.work.sum
 
 # env file
 .env
+app.env
 
 # Editor/IDE
-# .idea/
+ .idea/
 # .vscode/
+/.idea/.gitignore
+/.idea/dnd-session-service.iml
+/.idea/modules.xml
+/.idea/vcs.xml
