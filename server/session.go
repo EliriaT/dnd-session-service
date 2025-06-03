@@ -57,5 +57,5 @@ func (server *Server) createSession(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, session.ID)
+	ctx.JSON(http.StatusOK, gin.H{"id": session.ID})
 }
