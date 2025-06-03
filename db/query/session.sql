@@ -1,6 +1,6 @@
 -- name: GetSessionsByCampaignAndCharacter :many
 SELECT
-    s.*,
+    s.id, s.name,
     CASE
         WHEN sac.character_id IS NOT NULL THEN TRUE
         ELSE FALSE
