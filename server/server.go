@@ -26,7 +26,7 @@ func (server *Server) setupRouter() {
 	router := gin.Default()
 
 	router.POST("/sessions", server.getCampaignSessions)
-	//router.POST("/sessions/:id", server.createSession)
+	router.POST("/sessions/create", server.createSession)
 
 	server.router = router
 }
