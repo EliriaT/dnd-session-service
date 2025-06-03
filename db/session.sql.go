@@ -18,8 +18,8 @@ ON CONFLICT DO NOTHING
 `
 
 type AddSessionAllowedCharacterParams struct {
-	SessionID int64   `json:"session_id"`
-	Column2   []int64 `json:"column_2"`
+	SessionID int64   `json:"sessionId"`
+	Column2   []int64 `json:"column2"`
 }
 
 func (q *Queries) AddSessionAllowedCharacter(ctx context.Context, arg AddSessionAllowedCharacterParams) error {
@@ -35,8 +35,8 @@ RETURNING id, name, campaign_id, map_id
 
 type CreateSessionParams struct {
 	Name       string `json:"name"`
-	CampaignID int64  `json:"campaign_id"`
-	MapID      int64  `json:"map_id"`
+	CampaignID int64  `json:"campaignId"`
+	MapID      int64  `json:"mapId"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
@@ -65,14 +65,14 @@ WHERE s.campaign_id = $1
 `
 
 type GetSessionsByCampaignAndCharacterParams struct {
-	CampaignID  int64 `json:"campaign_id"`
-	CharacterID int64 `json:"character_id"`
+	CampaignID  int64 `json:"campaignId"`
+	CharacterID int64 `json:"characterId"`
 }
 
 type GetSessionsByCampaignAndCharacterRow struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
-	IsAllowed bool   `json:"is_allowed"`
+	IsAllowed bool   `json:"isAllowed"`
 }
 
 func (q *Queries) GetSessionsByCampaignAndCharacter(ctx context.Context, arg GetSessionsByCampaignAndCharacterParams) ([]GetSessionsByCampaignAndCharacterRow, error) {

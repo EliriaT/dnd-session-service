@@ -11,29 +11,29 @@ import (
 type Session struct {
 	ID         int64  `json:"id"`
 	Name       string `json:"name"`
-	CampaignID int64  `json:"campaign_id"`
-	MapID      int64  `json:"map_id"`
+	CampaignID int64  `json:"campaignId"`
+	MapID      int64  `json:"mapId"`
 }
 
 type SessionAllowedCharacter struct {
-	SessionID   int64 `json:"session_id"`
-	CharacterID int64 `json:"character_id"`
+	SessionID   int64 `json:"sessionId"`
+	CharacterID int64 `json:"characterId"`
 }
 
 type SessionCharactersPosition struct {
-	SessionID        int64     `json:"session_id"`
-	CharID           int64     `json:"char_id"`
-	XPos             int32     `json:"x_pos"`
-	YPos             int32     `json:"y_pos"`
-	IsVisible        bool      `json:"is_visible"`
-	ModificationDate time.Time `json:"modification_date"`
+	SessionID        int64     `json:"sessionId"`
+	CharID           int64     `json:"charId"`
+	XPos             int32     `json:"xPos"`
+	YPos             int32     `json:"yPos"`
+	IsVisible        bool      `json:"isVisible"`
+	ModificationDate time.Time `json:"modificationDate"`
 }
 
 type SessionObjectsPosition struct {
-	SessionID        int64     `json:"session_id"`
-	ObjectID         int64     `json:"object_id"`
-	XPos             int32     `json:"x_pos"`
-	YPos             int32     `json:"y_pos"`
-	IsVisible        bool      `json:"is_visible"`
-	ModificationDate time.Time `json:"modification_date"`
+	SessionID        int64     `json:"sessionId"`
+	ObjectID         int64     `json:"objectId"`
+	XPos             int32     `json:"xPos"`
+	YPos             int32     `json:"yPos"`
+	IsVisible        bool      `json:"isVisible"`
+	ModificationDate time.Time `json:"modificationDate"`
 }

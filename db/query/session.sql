@@ -4,7 +4,7 @@ SELECT
     CASE
         WHEN sac.character_id IS NOT NULL THEN TRUE
         ELSE FALSE
-        END AS isAllowed
+        END AS is_allowed
 FROM "sessions" s
          LEFT JOIN "session_allowed_characters" sac
                    ON s.id = sac.session_id AND sac.character_id = $2
