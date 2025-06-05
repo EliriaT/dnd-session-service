@@ -5,5 +5,5 @@ CREATE TABLE "session_objects_position" (
     y_pos INTEGER NOT NULL,
     is_visible BOOLEAN NOT NULL DEFAULT TRUE,
     modification_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (session_id, object_id, modification_date)
+    PRIMARY KEY (session_id, object_id)
 );

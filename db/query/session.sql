@@ -1,6 +1,11 @@
+-- name: GetSessionByID :one
+SELECT *
+FROM sessions
+WHERE id = $1;
+
 -- name: GetSessionsByCampaignAndCharacter :many
 SELECT
-    s.id, s.name,
+    s.id, s.name, s.is_active,
     CASE
         WHEN sac.character_id IS NOT NULL THEN TRUE
         ELSE FALSE
@@ -25,6 +30,7 @@ SELECT *
 FROM session_objects_position
 WHERE session_id = $1;
 
+-- name: GetCharactersBySession :many
 SELECT *
 FROM session_characters_position
 WHERE session_id = $1;

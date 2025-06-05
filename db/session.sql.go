@@ -31,7 +31,7 @@ func (q *Queries) AddSessionAllowedCharacter(ctx context.Context, arg AddSession
 const createSession = `-- name: CreateSession :one
 INSERT INTO "sessions" (name, campaign_id, map_id)
 VALUES ($1, $2, $3)
-RETURNING id, name, campaign_id, map_id
+RETURNING id, name, campaign_id, map_id, is_active
 `
 
 type CreateSessionParams struct {
@@ -48,8 +48,45 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.Name,
 		&i.CampaignID,
 		&i.MapID,
+		&i.IsActive,
 	)
 	return i, err
+}
+
+const getCharactersBySession = `-- name: GetCharactersBySession :many
+SELECT session_id, char_id, x_pos, y_pos, is_visible, modification_date
+FROM session_characters_position
+WHERE session_id = $1
+`
+
+func (q *Queries) GetCharactersBySession(ctx context.Context, sessionID int64) ([]SessionCharactersPosition, error) {
+	rows, err := q.db.QueryContext(ctx, getCharactersBySession, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SessionCharactersPosition
+	for rows.Next() {
+		var i SessionCharactersPosition
+		if err := rows.Scan(
+			&i.SessionID,
+			&i.CharID,
+			&i.XPos,
+			&i.YPos,
+			&i.IsVisible,
+			&i.ModificationDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getObjectsBySession = `-- name: GetObjectsBySession :many
@@ -88,9 +125,28 @@ func (q *Queries) GetObjectsBySession(ctx context.Context, sessionID int64) ([]S
 	return items, nil
 }
 
+const getSessionByID = `-- name: GetSessionByID :one
+SELECT id, name, campaign_id, map_id, is_active
+FROM sessions
+WHERE id = $1
+`
+
+func (q *Queries) GetSessionByID(ctx context.Context, id int64) (Session, error) {
+	row := q.db.QueryRowContext(ctx, getSessionByID, id)
+	var i Session
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CampaignID,
+		&i.MapID,
+		&i.IsActive,
+	)
+	return i, err
+}
+
 const getSessionsByCampaignAndCharacter = `-- name: GetSessionsByCampaignAndCharacter :many
 SELECT
-    s.id, s.name,
+    s.id, s.name, s.is_active,
     CASE
         WHEN sac.character_id IS NOT NULL THEN TRUE
         ELSE FALSE
@@ -109,6 +165,7 @@ type GetSessionsByCampaignAndCharacterParams struct {
 type GetSessionsByCampaignAndCharacterRow struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
+	IsActive  bool   `json:"isActive"`
 	IsAllowed bool   `json:"isAllowed"`
 }
 
@@ -121,7 +178,12 @@ func (q *Queries) GetSessionsByCampaignAndCharacter(ctx context.Context, arg Get
 	var items []GetSessionsByCampaignAndCharacterRow
 	for rows.Next() {
 		var i GetSessionsByCampaignAndCharacterRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.IsAllowed); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.IsActive,
+			&i.IsAllowed,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

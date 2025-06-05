@@ -11,3 +11,21 @@ type CreateSessionRequest struct {
 	MapID        int64   `json:"mapId" binding:"required"`
 	AllowedChars []int64 `json:"allowedCharacters" binding:"required,min=1,dive,required"`
 }
+
+type EditCharacterPositionRequest struct {
+	SessionID   int64 `json:"sessionId" binding:"required"`
+	CharacterID int64 `json:"characterId" binding:"required"`
+	X           int   `json:"x" binding:"required"`
+	Y           int   `json:"y" binding:"required"`
+}
+
+type EditObjectPositionRequest struct {
+	SessionID int64 `json:"sessionId" binding:"required"`
+	ObjectID  int64 `json:"objectId" binding:"required"`
+	X         int   `json:"x" binding:"required"`
+	Y         int   `json:"y" binding:"required"`
+}
+
+type GetIdRequest struct {
+	SessionID int64 `uri:"sessionId" binding:"required,min=1"`
+}

@@ -13,6 +13,7 @@ type Session struct {
 	Name       string `json:"name"`
 	CampaignID int64  `json:"campaignId"`
 	MapID      int64  `json:"mapId"`
+	IsActive   bool   `json:"isActive"`
 }
 
 type SessionAllowedCharacter struct {
