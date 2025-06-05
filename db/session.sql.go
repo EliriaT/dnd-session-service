@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/lib/pq"
 )
@@ -49,6 +50,42 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.MapID,
 	)
 	return i, err
+}
+
+const getObjectsBySession = `-- name: GetObjectsBySession :many
+SELECT session_id, object_id, x_pos, y_pos, is_visible, modification_date
+FROM session_objects_position
+WHERE session_id = $1
+`
+
+func (q *Queries) GetObjectsBySession(ctx context.Context, sessionID int64) ([]SessionObjectsPosition, error) {
+	rows, err := q.db.QueryContext(ctx, getObjectsBySession, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SessionObjectsPosition
+	for rows.Next() {
+		var i SessionObjectsPosition
+		if err := rows.Scan(
+			&i.SessionID,
+			&i.ObjectID,
+			&i.XPos,
+			&i.YPos,
+			&i.IsVisible,
+			&i.ModificationDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getSessionsByCampaignAndCharacter = `-- name: GetSessionsByCampaignAndCharacter :many
@@ -96,4 +133,70 @@ func (q *Queries) GetSessionsByCampaignAndCharacter(ctx context.Context, arg Get
 		return nil, err
 	}
 	return items, nil
+}
+
+const upsertCharacterPosition = `-- name: UpsertCharacterPosition :exec
+INSERT INTO session_characters_position (
+    session_id, char_id, x_pos, y_pos, is_visible, modification_date
+)
+VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (session_id, char_id) DO UPDATE
+    SET x_pos = EXCLUDED.x_pos,
+    y_pos = EXCLUDED.y_pos,
+    is_visible = EXCLUDED.is_visible,
+    modification_date = EXCLUDED.modification_date
+`
+
+type UpsertCharacterPositionParams struct {
+	SessionID        int64     `json:"sessionId"`
+	CharID           int64     `json:"charId"`
+	XPos             int32     `json:"xPos"`
+	YPos             int32     `json:"yPos"`
+	IsVisible        bool      `json:"isVisible"`
+	ModificationDate time.Time `json:"modificationDate"`
+}
+
+func (q *Queries) UpsertCharacterPosition(ctx context.Context, arg UpsertCharacterPositionParams) error {
+	_, err := q.db.ExecContext(ctx, upsertCharacterPosition,
+		arg.SessionID,
+		arg.CharID,
+		arg.XPos,
+		arg.YPos,
+		arg.IsVisible,
+		arg.ModificationDate,
+	)
+	return err
+}
+
+const upsertObjectPosition = `-- name: UpsertObjectPosition :exec
+INSERT INTO session_objects_position (
+    session_id, object_id, x_pos, y_pos, is_visible, modification_date
+)
+VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (session_id, object_id) DO UPDATE
+       SET x_pos = EXCLUDED.x_pos,
+       y_pos = EXCLUDED.y_pos,
+       is_visible = EXCLUDED.is_visible,
+       modification_date = EXCLUDED.modification_date
+`
+
+type UpsertObjectPositionParams struct {
+	SessionID        int64     `json:"sessionId"`
+	ObjectID         int64     `json:"objectId"`
+	XPos             int32     `json:"xPos"`
+	YPos             int32     `json:"yPos"`
+	IsVisible        bool      `json:"isVisible"`
+	ModificationDate time.Time `json:"modificationDate"`
+}
+
+func (q *Queries) UpsertObjectPosition(ctx context.Context, arg UpsertObjectPositionParams) error {
+	_, err := q.db.ExecContext(ctx, upsertObjectPosition,
+		arg.SessionID,
+		arg.ObjectID,
+		arg.XPos,
+		arg.YPos,
+		arg.IsVisible,
+		arg.ModificationDate,
+	)
+	return err
 }
