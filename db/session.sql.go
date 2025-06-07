@@ -197,6 +197,17 @@ func (q *Queries) GetSessionsByCampaignAndCharacter(ctx context.Context, arg Get
 	return items, nil
 }
 
+const setSessionActive = `-- name: SetSessionActive :exec
+UPDATE sessions
+SET is_active = TRUE
+WHERE id = $1
+`
+
+func (q *Queries) SetSessionActive(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, setSessionActive, id)
+	return err
+}
+
 const upsertCharacterPosition = `-- name: UpsertCharacterPosition :exec
 INSERT INTO session_characters_position (
     session_id, char_id, x_pos, y_pos, is_visible, modification_date

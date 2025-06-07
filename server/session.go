@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -164,6 +165,22 @@ func (server *Server) connectToSession(ctx *gin.Context) {
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid or missing id parameter"})
 		return
+	}
+	isDMQuery := ctx.Query("isDM")
+	if isDMQuery != "" {
+		isDM, err := strconv.ParseBool(isDMQuery)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid or missing isDM parameter"})
+			return
+		}
+
+		if isDM {
+			err := server.queries.SetSessionActive(ctx, uri.SessionID)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		}
 	}
 
 	handler := func(ws *websocket.Conn) {

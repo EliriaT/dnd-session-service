@@ -56,3 +56,9 @@ VALUES ($1, $2, $3, $4, $5, $6)
        y_pos = EXCLUDED.y_pos,
        is_visible = EXCLUDED.is_visible,
        modification_date = EXCLUDED.modification_date;
+
+-- name: SetSessionActive :exec
+UPDATE sessions
+SET is_active = TRUE
+WHERE id = $1;
+
