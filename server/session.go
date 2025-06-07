@@ -1,10 +1,15 @@
 package server
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"github.com/EliriaT/dnd-user-service/db"
 	"github.com/EliriaT/dnd-user-service/server/dto"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/net/websocket"
+	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -97,7 +102,7 @@ func (server *Server) editObject(ctx *gin.Context) {
 		ObjectID:         req.ObjectID,
 		XPos:             int32(req.X),
 		YPos:             int32(req.Y),
-		IsVisible:        true,
+		IsVisible:        *req.IsVisible,
 		ModificationDate: time.Now(),
 	})
 	if err != nil {
@@ -152,4 +157,125 @@ func (server *Server) getSessionById(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, session)
+}
+
+func (server *Server) connectToSession(ctx *gin.Context) {
+	var uri dto.GetIdRequest
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid or missing id parameter"})
+		return
+	}
+
+	handler := func(ws *websocket.Conn) {
+		server.WebSocketHandler(ws, uri.SessionID)
+	}
+
+	websocket.Handler(handler).ServeHTTP(ctx.Writer, ctx.Request)
+}
+
+func (server *Server) WebSocketHandler(ws *websocket.Conn, sessionId int64) {
+	defer ws.Close()
+
+	log.Println("new connection established for session:", sessionId)
+	log.Println("new incoming connection from client", ws.RemoteAddr())
+
+	server.mutex.Lock()
+	if server.sessionConns[sessionId] == nil {
+		server.sessionConns[sessionId] = make(map[*websocket.Conn]bool)
+	}
+	server.sessionConns[sessionId][ws] = true
+	server.mutex.Unlock()
+
+	chars, err := server.queries.GetCharactersBySession(context.Background(), sessionId)
+	if err != nil {
+		log.Println(err)
+		ws.Write([]byte("failed to load characters"))
+		ws.Close()
+		return
+	}
+
+	objs, err := server.queries.GetObjectsBySession(context.Background(), sessionId)
+	if err != nil {
+		ws.Write([]byte("failed to load objects"))
+		ws.Close()
+		return
+	}
+
+	msg, _ := json.Marshal(gin.H{"characters": chars, "objects": objs})
+	ws.Write(msg)
+
+	server.readLoop(ws, sessionId)
+}
+
+func (server *Server) readLoop(ws *websocket.Conn, sessionId int64) {
+	for {
+		var raw string
+		if err := websocket.Message.Receive(ws, &raw); err != nil {
+			if err == io.EOF {
+				delete(server.sessionConns[sessionId], ws)
+				break
+			}
+			log.Println("Received error:", err)
+			break
+		}
+
+		var msg dto.WebsocketMessage
+		if err := json.Unmarshal([]byte(raw), &msg); err != nil {
+			log.Println("Invalid JSON:", err)
+			continue
+		}
+
+		switch msg.Type {
+		case "editCharacter":
+			var payload dto.EditCharacterPositionRequest
+			if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+				log.Println("Invalid payload for editCharacter:", err)
+				continue
+			}
+			err := server.queries.UpsertCharacterPosition(context.Background(), db.UpsertCharacterPositionParams{
+				SessionID:        payload.SessionID,
+				CharID:           payload.CharacterID,
+				XPos:             int32(payload.X),
+				YPos:             int32(payload.Y),
+				IsVisible:        true,
+				ModificationDate: time.Now(),
+			})
+			if err != nil {
+				websocket.JSON.Send(ws, gin.H{"error": err.Error()})
+				return
+			}
+			server.broadcast(sessionId, msg)
+		case "editObject":
+			var payload dto.EditObjectPositionRequest
+			if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+				log.Println("Invalid payload for editObject:", err)
+				continue
+			}
+			err := server.queries.UpsertObjectPosition(context.Background(), db.UpsertObjectPositionParams{
+				SessionID:        payload.SessionID,
+				ObjectID:         payload.ObjectID,
+				XPos:             int32(payload.X),
+				YPos:             int32(payload.Y),
+				IsVisible:        *payload.IsVisible,
+				ModificationDate: time.Now(),
+			})
+			if err != nil {
+				websocket.JSON.Send(ws, gin.H{"error": err.Error()})
+				return
+			}
+			server.broadcast(sessionId, msg)
+		default:
+			log.Println("Unknown message type:", msg.Type)
+		}
+	}
+}
+
+func (server *Server) broadcast(sessionId int64, msg dto.WebsocketMessage) {
+	for ws := range server.sessionConns[sessionId] {
+		go func(ws *websocket.Conn) {
+			if err := websocket.JSON.Send(ws, msg); err != nil {
+				log.Println("Send error:", err)
+			}
+		}(ws)
+	}
 }

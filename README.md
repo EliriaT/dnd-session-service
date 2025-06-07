@@ -10,3 +10,5 @@ Run:
 `make createdb`
 
 `make migrateup`
+
+`make server`

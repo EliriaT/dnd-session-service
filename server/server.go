@@ -4,21 +4,25 @@ import (
 	"github.com/EliriaT/dnd-user-service/config"
 	"github.com/EliriaT/dnd-user-service/db"
 	"github.com/gin-gonic/gin"
-	//"golang.org/x/net/websocket"
+	"golang.org/x/net/websocket"
+	"sync"
 )
 
 type Server struct {
-	queries *db.Queries
-	router  *gin.Engine
-	config  config.Config
-	//sessionConns map[int64]map[*websocket.Conn]bool
+	queries      *db.Queries
+	router       *gin.Engine
+	config       config.Config
+	sessionConns map[int64]map[*websocket.Conn]bool
+	mutex        sync.Mutex
 }
 
 func NewServer(queries *db.Queries, config config.Config) (*Server, error) {
-	//sockets := make(map[int64]map[*websocket.Conn]bool)
+	sockets := make(map[int64]map[*websocket.Conn]bool)
 	server := &Server{
-		queries: queries,
-		config:  config,
+		queries:      queries,
+		config:       config,
+		sessionConns: sockets,
+		mutex:        sync.Mutex{},
 	}
 
 	server.setupRouter()
@@ -34,6 +38,7 @@ func (server *Server) setupRouter() {
 	router.POST("/sessions/characters", server.editCharacter)
 	router.GET("/sessions/:sessionId/map-state", server.getSessionMapState)
 	router.GET("/sessions/:sessionId", server.getSessionById)
+	router.GET("/sessions/:sessionId/connect", server.connectToSession)
 	server.router = router
 }
 

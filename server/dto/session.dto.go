@@ -1,5 +1,7 @@
 package dto
 
+import "encoding/json"
+
 type GetSessionsByCampaignRequest struct {
 	UserId     int64 `json:"userId" binding:"required"`
 	CampaignId int64 `json:"campaignId" binding:"required"`
@@ -24,8 +26,14 @@ type EditObjectPositionRequest struct {
 	ObjectID  int64 `json:"objectId" binding:"required"`
 	X         int   `json:"x" binding:"required"`
 	Y         int   `json:"y" binding:"required"`
+	IsVisible *bool `json:"isVisible" binding:"required"`
 }
 
 type GetIdRequest struct {
 	SessionID int64 `uri:"sessionId" binding:"required,min=1"`
+}
+
+type WebsocketMessage struct {
+	Type    string          `json:"type" binding:"required"`
+	Payload json.RawMessage `json:"payload"`
 }
