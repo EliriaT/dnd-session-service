@@ -27,6 +27,7 @@ services:
       - DB_DRIVER=postgres
       - DB_SOURCE=postgresql://root:secret@session-db:5432/session-db?sslmode=disable
       - SERVER_ADDRESS=0.0.0.0:8082
+      - CAMPAIGN_SERVICE_ADDRESS=http://campaign-service:8081
     depends_on:
       - session-db
     restart: always

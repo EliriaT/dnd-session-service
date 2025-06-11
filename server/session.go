@@ -22,9 +22,29 @@ func (server *Server) getCampaignSessions(ctx *gin.Context) {
 		return
 	}
 
+	var charResp struct {
+		CharacterID int64 `json:"characterId"`
+	}
+	charResp.CharacterID = req.UserId
+
+	campaignServiceURL := server.config.CampaignServiceAddress
+	reqURL := campaignServiceURL + "/manage/get_character?campaignId=" + strconv.FormatInt(req.CampaignId, 10) + "&userId=" + strconv.FormatInt(req.UserId, 10)
+
+	// skipping checks for now
+	resp, err := http.Get(reqURL)
+	if err == nil {
+		log.Println(resp)
+
+		defer resp.Body.Close()
+		if err := json.NewDecoder(resp.Body).Decode(&charResp); err != nil {
+			charResp.CharacterID = req.UserId
+			// skipping checks for now
+		}
+	}
+
 	sessions, err := server.queries.GetSessionsByCampaignAndCharacter(ctx, db.GetSessionsByCampaignAndCharacterParams{
 		CampaignID:  req.CampaignId,
-		CharacterID: req.UserId,
+		CharacterID: charResp.CharacterID,
 	})
 
 	if err != nil {
