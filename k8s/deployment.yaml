@@ -9,8 +9,8 @@ spec:
     app: dnd-session-service
   ports:
     - protocol: TCP
-      port: 8080
-      targetPort: 8080
+      port: 8082
+      targetPort: 8082
 ---
 apiVersion: apps/v1
 kind: Deployment
