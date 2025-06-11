@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: session-db-secret
+  namespace: default
+type: Opaque
+data:
+  POSTGRES_USER: cm9vdA==
+  POSTGRES_PASSWORD: c2VjcmV0
+  POSTGRES_DB: c2Vzc2lvbi1kYg==
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: session-db
+  namespace: default
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: session-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session-db
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: session-db
+  template:
+    metadata:
+      labels:
+        app: session-db
+    spec:
+      containers:
+        - name: session-db
+          image: postgres:12-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: session-db-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: session-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: session-db-secret
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: db-data
+          emptyDir: {}

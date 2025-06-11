@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dnd-session-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: dnd-session-service
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dnd-session-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dnd-session-service
+  template:
+    metadata:
+      labels:
+        app: dnd-session-service
+    spec:
+      containers:
+        - name: dnd-session-service
+          image: eliriat/dnd-session-service:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: DB_DRIVER
+              value: "postgres"
+            - name: DB_SOURCE
+              value: "postgresql://root:secret@session-db:5432/session-db?sslmode=disable"
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0:8082"
+          command: ["/app/wait-for.sh", "session-db:5432", "--", "/app/start.sh"]
+          args: ["/app/main"]
